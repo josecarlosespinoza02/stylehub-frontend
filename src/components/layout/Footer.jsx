@@ -53,6 +53,13 @@ export default function Footer() {
     { icon: Headphones, text: 'Soporte 24/7', color: 'from-green-600 to-teal-600' },
   ];
 
+  // Componente para ChevronRight SVG
+  const ChevronRight = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+
   return (
     <footer className={`relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' : 'bg-gradient-to-br from-gray-900 via-red-950 to-gray-900'} mt-20`}>
       
@@ -333,6 +340,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-// Import ChevronRight si no está importado
-import { ChevronRight } from 'lucide-react';

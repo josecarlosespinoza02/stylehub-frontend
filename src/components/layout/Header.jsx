@@ -279,8 +279,10 @@ export default function Header() {
                   </Link>
                 );
               })}
+            </nav>
 
-              {/* Admin Panel con tema navideño */}
+            {/* Admin Panel con tema navideño - Separado del nav */}
+            <div className="hidden lg:flex items-center">
               {isAdmin() && (
                 <div className="relative ml-2" ref={adminMenuRef}>
                   <button
@@ -343,7 +345,7 @@ export default function Header() {
                   )}
                 </div>
               )}
-            </nav>
+            </div>
 
             {/* Actions con estilo navideño */}
             <div className="flex items-center gap-2 md:gap-3">
@@ -523,7 +525,7 @@ export default function Header() {
           </div>
 
           {/* Header del Sidebar con gradiente navideño */}
-          <div className={`p-6 border-b ${isDark ? 'border-slate-800 bg-gradient-to-r from-red-900/20 to-green-900/20' : 'border-red-200 bg-gradient-to-r from-red-100 to-green-100'} relative z-10`}>
+          <div className={`pt-18 border-b ${isDark ? 'border-slate-800 bg-gradient-to-r from-red-900/20 to-green-900/20' : 'border-red-200 bg-gradient-to-r from-red-100 to-green-100'} relative z-10`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-red-600 via-green-600 to-red-600 rounded-xl flex items-center justify-center shadow-xl animate-pulse relative">
@@ -717,8 +719,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Spacer para el header fixed */}
-      <div className="h-16 md:h-20"></div>
     </>
   );
 }
