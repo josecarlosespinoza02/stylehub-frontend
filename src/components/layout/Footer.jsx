@@ -61,7 +61,7 @@ export default function Footer() {
   );
 
   return (
-    <footer className={`relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' : 'bg-gradient-to-br from-gray-900 via-red-950 to-gray-900'} mt-20`}>
+    <footer className={`relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' : 'bg-gradient-to-br from-gray-900 via-red-950 to-gray-900'} mt-0`}>
       
       {/* ❄️ EFECTOS NAVIDEÑOS DE FONDO */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
