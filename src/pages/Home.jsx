@@ -17,7 +17,7 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
+  useEffect(() => {
     loadProducts();
   }, []);
 
@@ -47,7 +47,6 @@ useEffect(() => {
     const defaultSize = sizes[0] || 'M';
     const defaultColor = colors[0] || 'Negro';
     
-    // Usa la función addToCart que recibes de props
     if (addToCart) {
       addToCart(product, 1, defaultSize, defaultColor);
     }
@@ -173,8 +172,8 @@ useEffect(() => {
 
             {/* CTAs mejorados con glow */}
             <div className="flex flex-wrap gap-6 justify-center pt-4">
-              <a 
-                href="/productos"
+              <Link 
+                to="/productos"
                 className="group px-10 py-5 bg-gradient-to-r from-red-600 via-green-600 to-red-600 text-white rounded-2xl font-black text-lg hover:shadow-2xl transition-all duration-300 flex items-center gap-3 transform hover:scale-110 bg-[length:200%_auto] hover:bg-right"
                 style={{
                   boxShadow: '0 10px 40px rgba(239, 68, 68, 0.4), 0 10px 60px rgba(34, 197, 94, 0.3)',
@@ -184,7 +183,7 @@ useEffect(() => {
                 <Gift className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                 Explorar Regalos
                 <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -205,8 +204,8 @@ useEffect(() => {
               {products.length} productos especiales para Navidad
             </p>
           </div>
-          <a
-            href="/productos"
+          <Link
+            to="/productos"
             className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center gap-3 ${
               isDark 
                 ? 'bg-gradient-to-r from-red-600/20 to-green-600/20 border-2 border-red-500/30 text-white hover:border-red-500 backdrop-blur-xl' 
@@ -215,7 +214,7 @@ useEffect(() => {
           >
             Ver Todo
             <ChevronRight className="w-6 h-6" />
-          </a>
+          </Link>
         </div>
 
         {loading ? (
@@ -243,9 +242,9 @@ useEffect(() => {
               const imageUrl = images[0] || 'https://via.placeholder.com/400x600?text=Hoodie';
               
               return (
-                <a
+                <Link
                   key={product.id}
-                  href={`/product/${product.id}`}
+                  to={`/product/${product.id}`}
                   className={`group rounded-3xl overflow-hidden transition-all duration-500 hover:shadow-2xl cursor-pointer ${
                     isDark 
                       ? 'bg-slate-900/80 border-2 border-slate-800 hover:border-red-500/60 backdrop-blur-xl' 
@@ -417,7 +416,7 @@ useEffect(() => {
                       </span>
                     </div>
                   </div>
-                </a>
+                </Link>
               );
             })}
           </div>
@@ -574,8 +573,8 @@ useEffect(() => {
                 Aprovecha nuestras ofertas exclusivas en bordados personalizados de Navidad
               </p>
 
-              <a
-                href="/ofertas"
+              <Link
+                to="/ofertas"
                 className="inline-flex items-center gap-3 px-10 py-5 bg-white text-red-600 rounded-2xl font-black text-lg hover:shadow-2xl transform hover:scale-110 transition-all duration-300"
                 style={{
                   boxShadow: '0 10px 40px rgba(255,255,255,0.3)'
@@ -583,7 +582,7 @@ useEffect(() => {
               >
                 Comprar Ahora
                 <ChevronRight className="w-6 h-6" />
-              </a>
+              </Link>
             </div>
 
             <div className="hidden md:flex items-center justify-center">
