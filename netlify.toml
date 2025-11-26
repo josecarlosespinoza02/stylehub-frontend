@@ -1,0 +1,32 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+**`.gitignore`** (raíz del frontend):
+```
+# dependencies
+node_modules
+
+# production
+dist
+dist-ssr
+
+# local env files
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# logs
+*.log
+
+# editor
+.vscode
+.idea
+.DS_Store

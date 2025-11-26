@@ -28,6 +28,7 @@ import InventoryAnalysis from "./pages/categories/admin/InventoryAnalysis";
 import Operations from "./pages/categories/admin/Operations";
 import MaterialsInventory from "./pages/categories/admin/MaterialsInventory";
 import Sales from "./pages/categories/admin/Sales";
+import AggregatePlanning from "./pages/categories/admin/AggregatePlanning";
 
 
 export default function App() {
@@ -118,6 +119,17 @@ export default function App() {
                     element={
                       <AdminRoute>
                         <Sales />
+                      </AdminRoute>
+                    } 
+                  />
+
+
+                  {/* Planificación Agregada */}
+                  <Route 
+                    path="/admin/planificacion" 
+                    element={
+                      <AdminRoute>
+                        <AggregatePlanning />
                       </AdminRoute>
                     } 
                   />
