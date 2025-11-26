@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   Package, Search, Plus, Edit2, Trash2, Filter,
   ChevronDown, X, Save, AlertCircle, Check, Upload, 
-  TrendingUp, DollarSign, ShoppingCart, BarChart3
+  TrendingUp, DollarSign, ShoppingCart, BarChart3,
+  Download, FileText // <- AGREGAR FileText para PDF
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -21,6 +22,7 @@ export default function InventoryComplete() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [imagePreview, setImagePreview] = useState([]);
+  const [isExporting, setIsExporting] = useState(false); // <- AGREGAR estado para exportación
 
   const [formData, setFormData] = useState({
     name: '',
@@ -75,6 +77,7 @@ export default function InventoryComplete() {
     }
   };
 
+  // ... (TODAS LAS FUNCIONES EXISTENTES SE MANTIENEN IGUAL)
   // Filtrar productos localmente
   const filteredProducts = products.filter(product => {
     const matchSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -280,6 +283,294 @@ export default function InventoryComplete() {
     return labels[category] || category;
   };
 
+  // === AGREGAR FUNCIÓN DE EXPORTACIÓN PDF ===
+  const exportToPDF = () => {
+    setIsExporting(true);
+    
+    try {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Inventario - Loyola Crea Tu Estilo</title>
+          <style>
+            body { 
+              font-family: 'Arial', sans-serif; 
+              padding: 30px; 
+              background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+              color: white;
+              min-height: 100vh;
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 30px;
+              border-bottom: 3px solid #3b82f6;
+              padding-bottom: 20px;
+            }
+            .header h1 { 
+              color: #3b82f6; 
+              font-size: 32px;
+              margin-bottom: 10px;
+            }
+            .stats-grid { 
+              display: grid; 
+              grid-template-columns: repeat(3, 1fr); 
+              gap: 15px; 
+              margin-bottom: 30px;
+            }
+            .stat-card { 
+              background: rgba(30, 41, 59, 0.8); 
+              padding: 20px; 
+              border-radius: 12px;
+              border: 1px solid #334155;
+              text-align: center;
+            }
+            .stat-value { 
+              font-size: 24px; 
+              font-weight: bold; 
+              color: #3b82f6;
+              margin: 8px 0;
+            }
+            .stat-title { 
+              color: #94a3b8; 
+              font-size: 13px;
+            }
+            .table-container { 
+              background: rgba(30, 41, 59, 0.8);
+              padding: 20px;
+              border-radius: 12px;
+              border: 1px solid #334155;
+              margin-bottom: 25px;
+            }
+            .table-title { 
+              color: #3b82f6; 
+              font-size: 18px; 
+              margin-bottom: 15px;
+              border-bottom: 2px solid #ec4899;
+              padding-bottom: 8px;
+            }
+            table { 
+              width: 100%; 
+              border-collapse: collapse;
+              font-size: 12px;
+            }
+            th { 
+              background: #3b82f6; 
+              color: white; 
+              padding: 10px; 
+              text-align: left;
+              font-weight: bold;
+            }
+            td { 
+              padding: 10px; 
+              border-bottom: 1px solid #334155;
+            }
+            .footer { 
+              text-align: center; 
+              margin-top: 30px; 
+              color: #64748b; 
+              font-size: 11px;
+              border-top: 1px solid #334155;
+              padding-top: 15px;
+            }
+            .stock-low { background: #fef2f2; color: #dc2626; padding: 3px 6px; border-radius: 8px; font-size: 10px; }
+            .stock-medium { background: #fffbeb; color: #ea580c; padding: 3px 6px; border-radius: 8px; font-size: 10px; }
+            .stock-high { background: #f0fdf4; color: #16a34a; padding: 3px 6px; border-radius: 8px; font-size: 10px; }
+            .category-badge { background: #e0e7ff; color: #4f46e5; padding: 3px 8px; border-radius: 8px; font-size: 10px; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>📦 Reporte de Inventario</h1>
+            <p>Loyola Crea Tu Estilo - Generado: ${new Date().toLocaleString('es-ES')}</p>
+            <p>Filtros: ${categoryFilter === 'all' ? 'Todas las categorías' : getCategoryLabel(categoryFilter)} • ${getStockFilterLabel()}</p>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-title">Total Productos</div>
+              <div class="stat-value">${inventoryStats?.overview?.totalProducts || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Stock Bajo</div>
+              <div class="stat-value">${inventoryStats?.overview?.lowStock || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Agotados</div>
+              <div class="stat-value">${inventoryStats?.overview?.outOfStock || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Valor Total</div>
+              <div class="stat-value">Bs ${inventoryStats?.overview?.totalValue?.toFixed(0) || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Ventas Totales</div>
+              <div class="stat-value">${inventoryStats?.overview?.totalSales || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Ingresos</div>
+              <div class="stat-value">Bs ${inventoryStats?.overview?.totalRevenue?.toFixed(0) || 0}</div>
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <div class="table-title">🏆 Top 5 Productos Más Vendidos</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th class="text-center">Vendidos</th>
+                  <th class="text-right">Ingresos</th>
+                  <th class="text-center">Stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${inventoryStats?.topProducts?.slice(0, 5).map((product, idx) => `
+                  <tr>
+                    <td><strong>${idx + 1}</strong></td>
+                    <td>${product.product_name}</td>
+                    <td class="text-center">${product.total_sold}</td>
+                    <td class="text-right">Bs ${parseFloat(product.total_revenue).toFixed(2)}</td>
+                    <td class="text-center">${product.current_stock || 0}</td>
+                  </tr>
+                `).join('') || '<tr><td colspan="5" class="text-center">No hay datos disponibles</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="table-container">
+            <div class="table-title">📋 Inventario Completo (${filteredProducts.length} productos)</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>SKU</th>
+                  <th>Categoría</th>
+                  <th class="text-right">Precio</th>
+                  <th class="text-center">Stock</th>
+                  <th class="text-center">Vendidos</th>
+                  <th class="text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredProducts.map(product => {
+                  const stockBadge = getStockBadge(product.stock);
+                  const price = Number(product.price);
+                  const stock = Number(product.stock);
+                  const totalValue = price * stock;
+                  const productSales = inventoryStats?.topProducts?.find(p => p.product_id === product.id);
+                  const totalSold = productSales ? productSales.total_sold : 0;
+                  
+                  return `
+                    <tr>
+                      <td>${product.name}</td>
+                      <td>${product.sku}</td>
+                      <td><span class="category-badge">${getCategoryLabel(product.category)}</span></td>
+                      <td class="text-right">Bs ${price.toFixed(2)}</td>
+                      <td class="text-center">
+                        <span class="${stockBadge.color.includes('red') ? 'stock-low' : stockBadge.color.includes('orange') ? 'stock-medium' : 'stock-high'}">
+                          ${stock} - ${stockBadge.label}
+                        </span>
+                      </td>
+                      <td class="text-center">${totalSold}</td>
+                      <td class="text-right">Bs ${totalValue.toFixed(2)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="6" class="text-right" style="font-weight: bold; padding-top: 15px; border-top: 2px solid #334155;">VALOR TOTAL INVENTARIO:</td>
+                  <td class="text-right" style="font-weight: bold; font-size: 14px; padding-top: 15px; border-top: 2px solid #334155;">
+                    Bs ${filteredProducts.reduce((sum, p) => sum + (Number(p.price) * Number(p.stock)), 0).toFixed(2)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          
+          <div class="footer">
+            <p><strong>Loyola Crea Tu Estilo</strong> - Sistema de Gestión de Inventario</p>
+            <p>Reporte generado automáticamente • ${filteredProducts.length} productos listados</p>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      const printWindow = window.open('', '_blank', 'width=1200,height=800');
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          setTimeout(() => {
+            printWindow.close();
+            setIsExporting(false);
+          }, 500);
+        }, 1000);
+      };
+      
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      alert('Error al generar PDF');
+      setIsExporting(false);
+    }
+  };
+
+  // Función auxiliar para etiqueta de filtro de stock
+  const getStockFilterLabel = () => {
+    switch(stockFilter) {
+      case 'low': return 'Stock Bajo (<20)';
+      case 'medium': return 'Stock Medio (20-49)';
+      case 'high': return 'Stock Alto (≥50)';
+      default: return 'Todos los niveles';
+    }
+  };
+
+  // === AGREGAR FUNCIÓN DE EXPORTACIÓN CSV (EXISTENTE) ===
+  const exportToCSV = () => {
+    setIsExporting(true);
+    
+    try {
+      let csv = 'INVENTARIO - LOYOLA CREA TU ESTILO\\n';
+      csv += `Fecha: ${new Date().toLocaleString('es-ES')}\\n`;
+      csv += `Filtros: ${categoryFilter === 'all' ? 'Todas las categorías' : getCategoryLabel(categoryFilter)} • ${getStockFilterLabel()}\\n\\n`;
+      
+      csv += 'PRODUCTOS\\n';
+      csv += 'Nombre,SKU,Categoría,Precio,Stock,Stock Nivel,Vendidos,Valor Total\\n';
+      
+      filteredProducts.forEach(product => {
+        const stockBadge = getStockBadge(product.stock);
+        const price = Number(product.price);
+        const stock = Number(product.stock);
+        const totalValue = price * stock;
+        const productSales = inventoryStats?.topProducts?.find(p => p.product_id === product.id);
+        const totalSold = productSales ? productSales.total_sold : 0;
+        
+        csv += `"${product.name}",${product.sku},${getCategoryLabel(product.category)},Bs${price.toFixed(2)},${stock},${stockBadge.label},${totalSold},Bs${totalValue.toFixed(2)}\\n`;
+      });
+      
+      csv += `\\nTOTAL,,,Bs${filteredProducts.reduce((sum, p) => sum + Number(p.price), 0).toFixed(2)},${filteredProducts.reduce((sum, p) => sum + Number(p.stock), 0)},,${filteredProducts.reduce((sum, p) => sum + (Number(p.price) * Number(p.stock)), 0).toFixed(2)}\\n`;
+      
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      
+      setIsExporting(false);
+    } catch (error) {
+      console.error('Error exportando CSV:', error);
+      alert('Error al exportar CSV');
+      setIsExporting(false);
+    }
+  };
+
   if (loading || !inventoryStats) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
@@ -292,7 +583,7 @@ export default function InventoryComplete() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="max-w-[1600px] mx-auto p-6 space-y-6">
         
-        {/* Header */}
+        {/* Header - AGREGAR BOTÓN PDF */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
@@ -304,15 +595,38 @@ export default function InventoryComplete() {
             <p className="text-gray-400">Administra tus productos con datos en tiempo real</p>
           </div>
           
-          <button
-            onClick={handleAdd}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2 justify-center"
-          >
-            <Plus className="w-5 h-5" />
-            Agregar Producto
-          </button>
+          <div className="flex items-center gap-3">
+            {/* BOTÓN PDF AGREGADO */}
+            <button
+              onClick={exportToPDF}
+              disabled={isExporting}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              <FileText className="w-4 h-4" />
+              {isExporting ? 'Exportando...' : 'PDF'}
+            </button>
+
+            {/* BOTÓN CSV EXISTENTE */}
+            <button
+              onClick={exportToCSV}
+              disabled={isExporting}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              {isExporting ? 'Exportando...' : 'Excel'}
+            </button>
+
+            <button
+              onClick={handleAdd}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2 justify-center"
+            >
+              <Plus className="w-5 h-5" />
+              Agregar Producto
+            </button>
+          </div>
         </div>
 
+        {/* ... EL RESTO DEL CÓDIGO PERMANECE EXACTAMENTE IGUAL ... */}
         {/* Stats Cards - CONECTADAS CON BACKEND */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
@@ -590,7 +904,7 @@ export default function InventoryComplete() {
         </div>
       </div>
 
-      {/* Modal Add/Edit */}
+      {/* Modal Add/Edit - PERMANECE EXACTAMENTE IGUAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
