@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Package, Search, Plus, Edit2, Trash2, Filter,
   ChevronDown, X, Save, AlertCircle, Check, Upload, 
-  TrendingUp, DollarSign, ShoppingCart, BarChart3,
-  Download, FileText, Table
+  TrendingUp, DollarSign, ShoppingCart, BarChart3
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -22,7 +21,6 @@ export default function InventoryComplete() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [imagePreview, setImagePreview] = useState([]);
-  const [exportLoading, setExportLoading] = useState({ pdf: false, excel: false });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -74,210 +72,6 @@ export default function InventoryComplete() {
       alert('Error al cargar datos del inventario');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Función para descargar PDF
-  const downloadPDF = async () => {
-    try {
-      setExportLoading(prev => ({ ...prev, pdf: true }));
-      
-      // Crear contenido HTML para el PDF
-      const printContent = document.createElement('div');
-      printContent.style.padding = '20px';
-      printContent.style.backgroundColor = 'white';
-      printContent.style.color = 'black';
-      
-      // Encabezado
-      printContent.innerHTML = `
-        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
-          <h1 style="color: #333; margin: 0;">Reporte de Inventario</h1>
-          <p style="color: #666;">Generado el ${new Date().toLocaleDateString()}</p>
-        </div>
-        
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Resumen General</h2>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #6c757d; font-size: 14px;">Total Productos</h3>
-              <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #333;">${inventoryStats.overview.totalProducts}</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #6c757d; font-size: 14px;">Valor Total</h3>
-              <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #333;">Bs ${inventoryStats.overview.totalValue.toFixed(0)}</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #6c757d; font-size: 14px;">Stock Bajo</h3>
-              <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #dc3545;">${inventoryStats.overview.lowStock}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Productos (${filteredProducts.length})</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background-color: #343a40; color: white;">
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Producto</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">SKU</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Categoría</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Precio</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Stock</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredProducts.map(product => {
-                const price = Number(product.price);
-                const stock = Number(product.stock);
-                const totalValue = price * stock;
-                const stockBadge = getStockBadge(stock);
-                
-                return `
-                  <tr style="border-bottom: 1px solid #dee2e6;">
-                    <td style="padding: 12px; border: 1px solid #dee2e6;">${product.name}</td>
-                    <td style="padding: 12px; border: 1px solid #dee2e6; font-family: monospace;">${product.sku}</td>
-                    <td style="padding: 12px; border: 1px solid #dee2e6;">${getCategoryLabel(product.category)}</td>
-                    <td style="padding: 12px; border: 1px solid #dee2e6;">Bs ${price.toFixed(2)}</td>
-                    <td style="padding: 12px; border: 1px solid #dee2e6; color: ${stockBadge.color.includes('red') ? '#dc3545' : stockBadge.color.includes('orange') ? '#fd7e14' : '#28a745'}">${stock}</td>
-                    <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Bs ${totalValue.toFixed(2)}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-        
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; text-align: center; color: #666;">
-          <p>Sistema de Gestión de Inventario - StyleHub</p>
-          <p>Página 1 de 1</p>
-        </div>
-      `;
-
-      // Crear ventana de impresión
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Reporte de Inventario - ${new Date().toLocaleDateString()}</title>
-            <style>
-              body { 
-                font-family: Arial, sans-serif; 
-                margin: 0; 
-                padding: 20px; 
-                color: #333;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              table { 
-                width: 100%; 
-                border-collapse: collapse; 
-                margin: 20px 0;
-                font-size: 12px;
-              }
-              th, td { 
-                border: 1px solid #ddd; 
-                padding: 8px; 
-                text-align: left;
-              }
-              th { 
-                background-color: #f8f9fa; 
-                font-weight: bold;
-              }
-              @media print {
-                body { margin: 0; }
-              }
-            </style>
-          </head>
-          <body>
-            ${printContent.innerHTML}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-
-      // Esperar a que cargue el contenido y luego imprimir
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
-      }, 500);
-
-    } catch (error) {
-      console.error('Error generando PDF:', error);
-      alert('Error al generar el PDF');
-    } finally {
-      setExportLoading(prev => ({ ...prev, pdf: false }));
-    }
-  };
-
-  // Función para descargar Excel
-  const downloadExcel = async () => {
-    try {
-      setExportLoading(prev => ({ ...prev, excel: true }));
-      
-      // Crear contenido CSV
-      const headers = ['Producto', 'SKU', 'Categoría', 'Precio (Bs)', 'Precio Anterior (Bs)', 'Stock', 'Nivel Stock', 'Valor Total (Bs)', 'Vendidos'];
-      const csvData = filteredProducts.map(product => {
-        const price = Number(product.price);
-        const oldPrice = product.old_price ? Number(product.old_price) : '';
-        const stock = Number(product.stock);
-        const totalValue = price * stock;
-        const stockBadge = getStockBadge(stock);
-        
-        // Buscar ventas del producto
-        const productSales = inventoryStats.topProducts.find(p => p.product_id === product.id);
-        const totalSold = productSales ? productSales.total_sold : 0;
-
-        return [
-          `"${product.name}"`,
-          product.sku,
-          getCategoryLabel(product.category),
-          price.toFixed(2),
-          oldPrice ? oldPrice.toFixed(2) : '',
-          stock,
-          stockBadge.label,
-          totalValue.toFixed(2),
-          totalSold
-        ];
-      });
-
-      // Agregar fila de totales
-      const totalValue = filteredProducts.reduce((sum, product) => {
-        return sum + (Number(product.price) * Number(product.stock));
-      }, 0);
-      
-      const totalProducts = filteredProducts.length;
-      const totalStock = filteredProducts.reduce((sum, product) => sum + Number(product.stock), 0);
-
-      csvData.push([]); // Línea vacía
-      csvData.push(['TOTALES', '', '', '', '', totalStock, '', totalValue.toFixed(2), '']);
-      csvData.push(['CANTIDAD PRODUCTOS', totalProducts, '', '', '', '', '', '', '']);
-
-      const csvContent = [headers, ...csvData]
-        .map(row => row.join(','))
-        .join('\n');
-
-      // Crear y descargar archivo
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', `inventario_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      alert('✅ Archivo Excel descargado exitosamente');
-
-    } catch (error) {
-      console.error('Error generando Excel:', error);
-      alert('Error al generar el archivo Excel');
-    } finally {
-      setExportLoading(prev => ({ ...prev, excel: false }));
     }
   };
 
@@ -510,48 +304,16 @@ export default function InventoryComplete() {
             <p className="text-gray-400">Administra tus productos con datos en tiempo real</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Botones de exportación */}
-            <div className="flex gap-2">
-              <button
-                onClick={downloadPDF}
-                disabled={exportLoading.pdf || filteredProducts.length === 0}
-                className="px-4 py-3 bg-red-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-red-500/50 transition-all flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {exportLoading.pdf ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <FileText className="w-4 h-4" />
-                )}
-                PDF
-              </button>
-              
-              <button
-                onClick={downloadExcel}
-                disabled={exportLoading.excel || filteredProducts.length === 0}
-                className="px-4 py-3 bg-green-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {exportLoading.excel ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Table className="w-4 h-4" />
-                )}
-                Excel
-              </button>
-            </div>
-            
-            <button
-              onClick={handleAdd}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2 justify-center"
-            >
-              <Plus className="w-5 h-5" />
-              Agregar Producto
-            </button>
-          </div>
+          <button
+            onClick={handleAdd}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2 justify-center"
+          >
+            <Plus className="w-5 h-5" />
+            Agregar Producto
+          </button>
         </div>
 
-        {/* Resto del código permanece igual... */}
-        {/* Stats Cards */}
+        {/* Stats Cards - CONECTADAS CON BACKEND */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
             <div className="flex items-center justify-between">
@@ -565,17 +327,480 @@ export default function InventoryComplete() {
             </div>
           </div>
 
-          {/* ... resto de las stats cards ... */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Stock Bajo</p>
+                <p className="text-3xl font-bold text-white">{inventoryStats.overview.lowStock}</p>
+              </div>
+              <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Agotados</p>
+                <p className="text-3xl font-bold text-white">{inventoryStats.overview.outOfStock}</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-orange-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Valor Total</p>
+                <p className="text-2xl font-bold text-white">Bs {inventoryStats.overview.totalValue.toFixed(0)}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-green-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Ventas Totales</p>
+                <p className="text-3xl font-bold text-white">{inventoryStats.overview.totalSales}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <ShoppingCart className="w-6 h-6 text-blue-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Ingresos</p>
+                <p className="text-2xl font-bold text-white">Bs {inventoryStats.overview.totalRevenue.toFixed(0)}</p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-yellow-400" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* ... resto del componente ... */}
+        {/* Top Productos Más Vendidos */}
+        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-purple-400" />
+            Top 5 Productos Más Vendidos
+          </h3>
+          <div className="space-y-3">
+            {inventoryStats.topProducts.slice(0, 5).map((product, idx) => (
+              <div key={idx} className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-all">
+                <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg font-bold text-white">
+                  #{idx + 1}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold">{product.product_name}</p>
+                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                    <span>{product.total_sold} unidades vendidas</span>
+                    <span>•</span>
+                    <span>Stock actual: {product.current_stock || 0}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-green-400 font-bold text-lg">Bs {parseFloat(product.total_revenue).toFixed(2)}</p>
+                  <p className="text-xs text-gray-500">Precio: Bs {product.current_price}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
+        {/* Search and Filters */}
+        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o SKU..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-slate-800 text-white rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-6 py-3 bg-slate-800 text-white rounded-xl border border-slate-700 hover:bg-slate-700 transition-all flex items-center gap-2 justify-center"
+            >
+              <Filter className="w-5 h-5" />
+              Filtros
+              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-400 mb-2 block">Categoría</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-800 text-white rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">Todas las categorías</option>
+                  <option value="hombre">Hombre</option>
+                  <option value="mujer">Mujer</option>
+                  <option value="ninos">Niños</option>
+                  <option value="ofertas">Ofertas</option>
+                  <option value="novedades">Novedades</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-400 mb-2 block">Nivel de Stock</label>
+                <select
+                  value={stockFilter}
+                  onChange={(e) => setStockFilter(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-800 text-white rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">Todos los niveles</option>
+                  <option value="low">Bajo (&lt;20)</option>
+                  <option value="medium">Medio (20-49)</option>
+                  <option value="high">Alto (≥50)</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Products Table */}
+        <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-800/50 border-b border-slate-700">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Producto</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">SKU</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Categoría</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Precio</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Stock</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Vendidos</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Valor</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-400">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {filteredProducts.map((product) => {
+                  const stockBadge = getStockBadge(product.stock);
+                  const price = Number(product.price);
+                  const oldPrice = product.old_price ? Number(product.old_price) : null;
+                  const stock = Number(product.stock);
+                  const totalValue = price * stock;
+                  const images = Array.isArray(product.images) ? product.images : JSON.parse(product.images || '[]');
+                  
+                  // Buscar ventas del producto
+                  const productSales = inventoryStats.topProducts.find(p => p.product_id === product.id);
+                  const totalSold = productSales ? productSales.total_sold : 0;
+
+                  return (
+                    <tr key={product.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={images[0] || 'https://via.placeholder.com/100'}
+                            alt={product.name}
+                            className="w-12 h-12 rounded-lg object-cover"
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/100?text=Hoodie'; }}
+                          />
+                          <div>
+                            <p className="text-white font-semibold">{product.name}</p>
+                            {oldPrice && (
+                              <p className="text-xs text-gray-400">
+                                Descuento: {Math.round(((oldPrice - price) / oldPrice) * 100)}%
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-gray-300 font-mono text-sm">{product.sku}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-semibold">
+                          {getCategoryLabel(product.category)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="text-white font-semibold">Bs {price.toFixed(2)}</p>
+                          {oldPrice && (
+                            <p className="text-xs text-gray-500 line-through">Bs {oldPrice.toFixed(2)}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${stockBadge.color}`}>
+                          {stock} - {stockBadge.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="text-white font-semibold">{totalSold}</p>
+                          <p className="text-xs text-gray-500">unidades</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-white font-semibold">Bs {totalValue.toFixed(2)}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product)}
+                            className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No se encontraron productos</p>
+                <p className="text-gray-500 text-sm mt-2">Intenta cambiar los filtros o términos de búsqueda</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Modal Add/Edit - permanece igual */}
+      {/* Modal Add/Edit */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          {/* ... contenido del modal ... */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
+              <h2 className="text-xl font-bold text-white">
+                {modalMode === 'add' ? 'Agregar Producto' : 'Editar Producto'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleSave} className="space-y-6" id="productForm">
+              
+              {/* Información básica */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">
+                    Nombre del Producto *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="Ej: Hoodie Personalizada Premium"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">SKU *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.sku}
+                    onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="HOOD-001"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Categoría *</label>
+                  <select
+                    required
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  >
+                    <option value="hombre">Hombre</option>
+                    <option value="mujer">Mujer</option>
+                    <option value="ninos">Niños</option>
+                    <option value="ofertas">Ofertas</option>
+                    <option value="novedades">Novedades</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Precio (Bs) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={formData.price}
+                    onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="189.99"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Precio Anterior (Bs)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.oldPrice}
+                    onChange={(e) => setFormData({...formData, oldPrice: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="249.99"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Stock *</label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.stock}
+                    onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="45"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Badge</label>
+                  <select
+                    value={formData.badge}
+                    onChange={(e) => setFormData({...formData, badge: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  >
+                    <option value="">Sin badge</option>
+                    <option value="HOT">HOT</option>
+                    <option value="NEW">NEW</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="text-sm font-medium text-gray-300 mb-2 block">Descripción</label>
+                <textarea
+                  rows="3"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"
+                  placeholder="Descripción detallada del producto..."
+                />
+              </div>
+
+              {/* Tallas y Colores */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Tallas (separadas por coma)</label>
+                  <input
+                    type="text"
+                    value={formData.sizes.join(', ')}
+                    onChange={(e) => setFormData({...formData, sizes: e.target.value.split(',').map(s => s.trim())})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="S, M, L, XL"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Colores (separados por coma)</label>
+                  <input
+                    type="text"
+                    value={formData.colors.join(', ')}
+                    onChange={(e) => setFormData({...formData, colors: e.target.value.split(',').map(c => c.trim())})}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="Negro, Gris, Azul"
+                  />
+                </div>
+              </div>
+
+              {/* Imágenes */}
+              <div>
+                <label className="text-sm font-medium text-gray-300 mb-3 block">
+                  Imágenes del Producto *
+                </label>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                  {imagePreview.map((preview, idx) => (
+                    <div key={idx} className="relative group">
+                      <img
+                        src={preview.url}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border-2 border-slate-700"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-lg cursor-pointer hover:border-purple-500 transition-all">
+                  <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                  <span className="text-xs text-gray-400">Click para subir imágenes</span>
+                  <span className="text-xs text-gray-500">(Máx 5MB por imagen)</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              </form>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3 p-6 border-t border-slate-800 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 px-4 py-2.5 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-700 transition-all text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                form="productForm"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 text-sm"
+              >
+                <Save className="w-4 h-4" />
+                {modalMode === 'add' ? 'Agregar' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
