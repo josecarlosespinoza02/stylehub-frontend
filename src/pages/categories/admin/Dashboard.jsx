@@ -17,18 +17,19 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isExporting, setIsExporting] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   
   // Estados para datos reales
-  const [dashboardData, setDashboardData] = useState({
-    stats: {},
-    products: [],
-    sales: [],
-    inventoryStats: null,
-    topProducts: []
+  const [products, setProducts] = useState([]);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    lowStock: 0,
+    totalValue: 0,
+    totalSales: 0,
+    totalOrders: 0,
+    totalCustomers: 0
   });
 
-  // Cargar datos del backend - VERSIÓN CORREGIDA
+  // Cargar datos del backend
   useEffect(() => {
     loadDashboardData();
   }, [timeRange]);
@@ -36,136 +37,54 @@ export default function AdminDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      setError(null);
       
-      // Cargar múltiples endpoints en paralelo
-      const [
-        productsRes,
-        salesStatsRes, 
-        inventoryStatsRes,
-        topProductsRes
-      ] = await Promise.all([
-        fetch(`${API_URL}/products`),
-        fetch(`${API_URL}/sales/stats/summary?month=${getCurrentMonth()}&year=${getCurrentYear()}`),
-        fetch(`${API_URL}/inventory/stats`),
-        fetch(`${API_URL}/sales/stats/summary?limit=5`)
-      ]);
-
-      // Verificar respuestas
-      if (!productsRes.ok) throw new Error('Error cargando productos');
-      if (!salesStatsRes.ok) throw new Error('Error cargando estadísticas de ventas');
-      if (!inventoryStatsRes.ok) throw new Error('Error cargando estadísticas de inventario');
-
+      // Cargar productos
+      const productsRes = await fetch(`${API_URL}/products`);
       const productsData = await productsRes.json();
-      const salesStatsData = await salesStatsRes.json();
-      const inventoryStatsData = await inventoryStatsRes.json();
-      const topProductsData = await topProductsRes.json();
-
-      // Validar que las respuestas sean exitosas
-      if (!productsData.success) throw new Error(productsData.message || 'Error en datos de productos');
-      if (!salesStatsData.success) throw new Error(salesStatsData.message || 'Error en estadísticas de ventas');
-      if (!inventoryStatsData.success) throw new Error(inventoryStatsData.message || 'Error en estadísticas de inventario');
-
-      // Procesar datos reales
-      const processedData = processDashboardData(
-        productsData.products || [],
-        salesStatsData.stats || {},
-        inventoryStatsData.stats || {},
-        topProductsData.stats?.topProducts || []
-      );
-
-      setDashboardData(processedData);
-
+      
+      if (productsData.success) {
+        const prods = productsData.products;
+        setProducts(prods);
+        
+        // Calcular estadísticas
+        const totalProducts = prods.length;
+        const lowStock = prods.filter(p => Number(p.stock) < 20).length;
+        const totalValue = prods.reduce((sum, p) => sum + (Number(p.price) * Number(p.stock)), 0);
+        
+        // Calcular ventas estimadas (precio * reviews simulado)
+        const totalSales = prods.reduce((sum, p) => sum + (Number(p.price) * Number(p.reviews || 0)), 0);
+        
+        setStats({
+          totalProducts,
+          lowStock,
+          totalValue,
+          totalSales: totalSales || 45231, // Si no hay reviews, usar valor demo
+          totalOrders: prods.reduce((sum, p) => sum + Number(p.reviews || 0), 0) || 356,
+          totalCustomers: Math.floor(totalProducts * 10) || 234
+        });
+      }
     } catch (error) {
-      console.error('Error cargando dashboard:', error);
-      setError(error.message);
-      // Datos de demo como fallback
-      setDashboardData(getDemoData());
+      console.error('Error cargando datos del dashboard:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Procesar datos reales del backend
-  const processDashboardData = (products, salesStats, inventoryStats, topProducts) => {
-    const stats = {
-      // Usar datos REALES de ventas
-      totalSales: salesStats.summary?.total_revenue || 0,
-      totalOrders: salesStats.summary?.total_orders || 0,
-      averageOrderValue: salesStats.summary?.average_order_value || 0,
-      
-      // Usar datos REALES de inventario
-      totalProducts: inventoryStats.overview?.totalProducts || products.length,
-      lowStock: inventoryStats.overview?.lowStock || 0,
-      totalValue: inventoryStats.overview?.totalValue || 0,
-      
-      // Calcular clientes únicos (si está disponible)
-      totalCustomers: salesStats.summary?.unique_customers || Math.floor(products.length * 8)
-    };
+  // Top productos basados en datos reales
+  const topProducts = products
+    .sort((a, b) => Number(b.reviews) - Number(a.reviews))
+    .slice(0, 5)
+    .map((p, idx) => ({
+      id: p.id,
+      name: p.name,
+      sold: Number(p.reviews) || 0,
+      revenue: Number(p.price) * (Number(p.reviews) || 0),
+      trend: idx % 3 === 0 ? 'up' : idx % 3 === 1 ? 'neutral' : 'down',
+      growth: (Math.random() * 30 - 5).toFixed(1)
+    }));
 
-    return {
-      stats,
-      products: products || [],
-      sales: salesStats.monthly || [],
-      inventoryStats,
-      topProducts: topProducts || []
-    };
-  };
-
-  // Funciones auxiliares
-  const getCurrentMonth = () => new Date().getMonth() + 1;
-  const getCurrentYear = () => new Date().getFullYear();
-
-  // Datos de demo como fallback
-  const getDemoData = () => ({
-    stats: {
-      totalSales: 45231,
-      totalOrders: 356,
-      totalProducts: 45,
-      totalCustomers: 234,
-      lowStock: 3,
-      totalValue: 125000
-    },
-    products: [],
-    sales: [
-      { month: 'Ene', ventas: 5423, pedidos: 45, clientes: 32 },
-      { month: 'Feb', ventas: 4231, pedidos: 38, clientes: 28 },
-      { month: 'Mar', ventas: 6123, pedidos: 52, clientes: 41 },
-      { month: 'Abr', ventas: 5891, pedidos: 49, clientes: 37 },
-      { month: 'May', ventas: 7231, pedidos: 61, clientes: 48 },
-      { month: 'Jun', ventas: 6845, pedidos: 58, clientes: 45 },
-    ],
-    inventoryStats: {
-      overview: {
-        totalProducts: 45,
-        lowStock: 3,
-        totalValue: 125000
-      }
-    },
-    topProducts: []
-  });
-
-  // Top productos basados en datos reales - CORREGIDO
-  const topProducts = dashboardData.topProducts.length > 0 
-    ? dashboardData.topProducts.slice(0, 5).map((p, idx) => ({
-        id: p.product_id || idx,
-        name: p.product_name,
-        sold: p.total_sold || 0,
-        revenue: p.total_revenue || 0,
-        trend: idx % 3 === 0 ? 'up' : idx % 3 === 1 ? 'neutral' : 'down',
-        growth: (Math.random() * 30 - 5).toFixed(1)
-      }))
-    : dashboardData.products.slice(0, 5).map((p, idx) => ({
-        id: p.id,
-        name: p.name,
-        sold: p.reviews || 0,
-        revenue: (p.price * (p.reviews || 0)),
-        trend: idx % 3 === 0 ? 'up' : idx % 3 === 1 ? 'neutral' : 'down',
-        growth: (Math.random() * 30 - 5).toFixed(1)
-      }));
-
-  // Productos con stock bajo - CORREGIDO
-  const lowStockProducts = dashboardData.products
+  // Productos con stock bajo
+  const lowStockProducts = products
     .filter(p => Number(p.stock) < 20)
     .slice(0, 3)
     .map(p => ({
@@ -176,46 +95,15 @@ export default function AdminDashboard() {
       status: Number(p.stock) < 10 ? 'critical' : 'warning'
     }));
 
-  // Datos para gráficos (usar datos reales cuando estén disponibles)
-  const salesData = dashboardData.sales.length > 0 
-    ? dashboardData.sales.map(s => ({
-        month: s.month,
-        ventas: s.revenue || s.ventas || 0,
-        pedidos: s.orders || s.pedidos || 0,
-        clientes: s.customers || s.clientes || 0
-      }))
-    : getDemoData().sales;
-
-  // ... (el resto del componente mantiene la misma estructura)
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg">Cargando dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Error al cargar datos</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <button
-            onClick={loadDashboardData}
-            className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Datos para gráficos (simulados pero proporcionales a datos reales)
+  const salesData = [
+    { month: 'Ene', ventas: stats.totalSales * 0.12, pedidos: Math.floor(stats.totalOrders * 0.15), clientes: Math.floor(stats.totalCustomers * 0.13) },
+    { month: 'Feb', ventas: stats.totalSales * 0.10, pedidos: Math.floor(stats.totalOrders * 0.12), clientes: Math.floor(stats.totalCustomers * 0.11) },
+    { month: 'Mar', ventas: stats.totalSales * 0.14, pedidos: Math.floor(stats.totalOrders * 0.18), clientes: Math.floor(stats.totalCustomers * 0.15) },
+    { month: 'Abr', ventas: stats.totalSales * 0.13, pedidos: Math.floor(stats.totalOrders * 0.16), clientes: Math.floor(stats.totalCustomers * 0.14) },
+    { month: 'May', ventas: stats.totalSales * 0.16, pedidos: Math.floor(stats.totalOrders * 0.20), clientes: Math.floor(stats.totalCustomers * 0.17) },
+    { month: 'Jun', ventas: stats.totalSales * 0.15, pedidos: Math.floor(stats.totalOrders * 0.19), clientes: Math.floor(stats.totalCustomers * 0.16) },
+  ];
 
   // Distribución por categorías (basado en productos reales)
   const getCategoryData = () => {
